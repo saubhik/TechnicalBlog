@@ -40,8 +40,21 @@ public class PostsManager {
         return (boolean) fileOperations.deleteFile(Constants.POST_FILE_PREFIX, postTitle);
     }
 
+    public static void main(String[] args) {
+        PostsManager postsManager = new PostsManager();
+        Post post = new Post();
+        post.setTitle("Test");
+        post.setBody("Content in test file");
+        post.setDate(new Date());
+        postsManager.writeToFile(post);
+    }
+
     public Post writeToFile(final Post post) {
-        return (Post) fileOperations.writeToFile(Constants.POST_FILE_PREFIX, post, post.getTitle());
+        JDBCConnector jdbcConnector = JDBCConnector.getInstance();
+        String query = "INSERT INTO Posts(title, body, date) VALUES(\'" + post.getTitle() + "\',\'"
+                + post.getBody() + "\', \'03-03-2017\')";
+        jdbcConnector.execute(query);
+        return null;
     }
 
     public Post getPost(final String prefix) {
