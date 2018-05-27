@@ -49,5 +49,5 @@ public class PostServiceImp implements PostService {
     }
 
     @Override
-    public void deleteById(Post post) { postsManager.deletePost(post.getTitle()); }
+    public void deleteById(Post post) { postsManager.deletePost(post.getId()); }
 }

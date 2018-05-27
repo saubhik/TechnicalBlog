@@ -1,5 +1,6 @@
 package blog.controller;
 
+import blog.common.CurrentUser;
 import blog.form.RegisterNewUser;
 import blog.model.User;
 import blog.services.UserServiceImp;
@@ -8,8 +9,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-
-import java.nio.charset.StandardCharsets;
 
 @Controller
 public class UserController {
@@ -24,9 +23,10 @@ public class UserController {
     }
 
     @RequestMapping(value = "/users/login", method = RequestMethod.POST)
-    public String login(User user, Model model) {
+    public String login(RegisterNewUser user, Model model) {
 
         if (userServiceImp.authenticate(user.getUsername(), user.getPassword())) {
+            CurrentUser.getInstance().setUserName(user.getUsername());
             return "redirect:/posts";
         }
 
@@ -48,7 +48,7 @@ public class UserController {
         User user = new User();
         user.setUsername(registerNewUser.getUsername());
         user.setFullName(registerNewUser.getFullName());
-        user.setPassword(registerNewUser.getPassword());
+        user.setPasswordHash(registerNewUser.getPassword());
         userServiceImp.registerNewUser(user);
         return "redirect:/";
     }

@@ -1,13 +1,18 @@
 package blog.common;
 
 import blog.model.Post;
+import org.hibernate.Criteria;
+import org.hibernate.Query;
+import org.hibernate.Session;
+import org.hibernate.criterion.Projection;
+import org.hibernate.criterion.Projections;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class PostsManager {
+public class PostsManager extends SessionManager {
 
     private FileOperations<Post> fileOperations;
 
@@ -23,38 +28,63 @@ public class PostsManager {
     }
 
     public List<Post> readAllPosts() {
-        return (ArrayList<Post>) fileOperations.readAllFiles(Constants.POST_DIR_NAME);
+        Session session = openSession();
+        List<Post> posts = session.createCriteria(Post.class).list();
+        commitSession(session);
+        return posts;
     }
 
     public List<Post> getThreePosts() {
-        return (ArrayList<Post>) fileOperations.readRecentFiles(3, Constants.POST_DIR_NAME);
+        Session session = openSession();
+        Criteria criteria = session.createCriteria(Post.class);
+        criteria.setMaxResults(3);
+        List<Post> posts = criteria.list();
+        commitSession(session);
+        return posts;
     }
 
-    public static int numberOfPosts() {
-        File file = new File(Constants.POST_DIR_NAME);
-        File[] files = file.listFiles();
-        return files.length;
+    public long numberOfPosts() {
+        Session session = openSession();
+        Long noOfPosts = (Long) session.createCriteria(Post.class).setProjection(Projections.rowCount()).uniqueResult();
+        commitSession(session);
+        return noOfPosts;
     }
 
-    public boolean deletePost(final String postTitle) {
-        return (boolean) fileOperations.deleteFile(Constants.POST_FILE_PREFIX, postTitle);
+    @SuppressWarnings("unchecked")
+    public Post readPost(final long postId) {
+        Session session = openSession();
+        Post post = (Post) session.get(Post.class, postId);
+        commitSession(session);
+        return post;
+    }
+
+    public void updatePost(final String body, final int postId) {
+        Session session = openSession();
+        Query query = session.createQuery("Update post set post body = \'" + body + "\' where id= :postId");
+        query.setParameter("postId", postId);
+        query.executeUpdate();
+        commitSession(session);
+    }
+
+    public void deletePost(final Long postId) {
+        Session session = openSession();
+        Query query = session.createQuery("Delete from " + Post.class.getName() + "where id= :postId");
+        query.setParameter("postId", postId);
+        query.executeUpdate();
+        commitSession(session);
     }
 
     public static void main(String[] args) {
         PostsManager postsManager = new PostsManager();
-        Post post = new Post();
-        post.setTitle("Test");
-        post.setBody("Content in test file");
-        post.setDate(new Date());
-        postsManager.writeToFile(post);
+        postsManager.numberOfPosts();
+        System.out.printf("");
     }
 
     public Post writeToFile(final Post post) {
-        JDBCConnector jdbcConnector = JDBCConnector.getInstance();
-        String query = "INSERT INTO Posts(title, body, date) VALUES(\'" + post.getTitle() + "\',\'"
-                + post.getBody() + "\', \'03-03-2017\')";
-        jdbcConnector.execute(query);
-        return null;
+        Session session = openSession();
+        session.save(post);
+        commitSession(session);
+        return post;
     }
 
     public Post getPost(final String prefix) {
